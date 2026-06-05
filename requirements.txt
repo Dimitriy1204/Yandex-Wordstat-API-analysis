@@ -1,0 +1,37 @@
+# ============================================
+# Yandex Wordstat Analysis Agent v2
+# Зависимости проекта
+# ============================================
+
+# --- Веб-сервер ---
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+jinja2>=3.1.0
+python-multipart>=0.0.6
+
+# --- HTTP и данные ---
+requests>=2.31.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# --- Excel ---
+xlsxwriter>=3.1.0
+openpyxl>=3.1.0
+
+# --- Конфигурация ---
+python-dotenv>=1.0.0
+
+# --- Шифрование ---
+cryptography>=41.0.0
+
+# --- Прогнозирование ---
+prophet>=1.1.5
+
+# --- Pydantic (входит в FastAPI) ---
+# pydantic>=2.0.0
+
+# --- ASGI сервер ---
+# uvicorn уже указан выше
+
+# --- Для сборки exe ---
+pyinstaller>=6.0.0

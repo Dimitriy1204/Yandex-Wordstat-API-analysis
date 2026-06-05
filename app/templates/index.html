@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordstatAgent — Анализ поисковых запросов</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        :root{--primary:#1e3a6e;--primary-light:#2a4a8a;--primary-dark:#0f1a38;--accent:#3b6fd0;--accent-hover:#2d5bc0;--accent-glow:rgba(59,111,208,.25);--rifei-blue:#2b4a9e;--rifei-red:#c41e24;--success:#28a767;--bg:#f0f3f8;--card-bg:#fff;--text:#1e3a6e;--text-secondary:#5a6d8a;--text-muted:#8a96a8;--border:#d6dde8;--border-focus:#3b6fd0;--input-bg:#f5f7fb;--radius:14px;--radius-sm:10px;--radius-xs:7px;--shadow:0 1px 3px rgba(30,58,110,.06),0 1px 2px rgba(30,58,110,.04);--shadow-md:0 4px 16px rgba(30,58,110,.08),0 2px 6px rgba(30,58,110,.04);--shadow-lg:0 12px 32px rgba(30,58,110,.12),0 4px 8px rgba(30,58,110,.06);--transition:all .25s cubic-bezier(.4,0,.2,1)}
+        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
+        .header{background:#fff;padding:0 32px;height:76px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border);box-shadow:0 1px 8px rgba(30,58,110,.06)}
+        .header-left{display:flex;align-items:center;gap:24px}
+        .rifei-logo{display:flex;align-items:center;height:48px}.rifei-logo svg{height:100%;width:auto}
+        .header-divider{width:1px;height:36px;background:var(--border)}
+        .header-brand{display:flex;align-items:center;gap:12px}
+        .header-logo{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),#5a8ae0);border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(59,111,208,.25)}
+        .header-logo svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+        .header-title{color:var(--primary-dark);font-size:17px;font-weight:700;letter-spacing:-.3px}.header-title span{color:var(--accent)}
+        .header-subtitle{color:var(--text-muted);font-size:12px;font-weight:400;margin-top:1px}
+        .header-badge{background:rgba(43,74,158,.08);color:var(--rifei-blue);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.3px;border:1px solid rgba(43,74,158,.15)}
+        .main-container{max-width:1040px;margin:0 auto;padding:28px 24px 48px}
+        .tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--card-bg);padding:5px;border-radius:var(--radius);box-shadow:var(--shadow);width:fit-content;border:1px solid var(--border)}
+        .tab{padding:10px 24px;border-radius:var(--radius-sm);border:none;background:transparent;color:var(--text-secondary);font-size:14px;font-weight:500;cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:8px;font-family:inherit}
+        .tab:hover{color:var(--text);background:var(--input-bg)}.tab.active{background:var(--rifei-blue);color:#fff;box-shadow:0 2px 8px rgba(43,74,158,.3)}
+        .card{background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;margin-bottom:20px;transition:var(--transition);border:1px solid var(--border)}
+        .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+        .card-title{font-size:16px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:10px}
+        .card-title-icon{width:36px;height:36px;background:rgba(43,74,158,.08);border:1px solid rgba(43,74,158,.15);border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .card-title-icon svg{width:18px;height:18px;stroke:var(--rifei-blue);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+        .card-description{font-size:13px;color:var(--text-secondary);margin-top:4px}
+        .form-group{margin-bottom:20px}.form-group:last-child{margin-bottom:0}
+        .form-label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:7px}.form-label .hint{font-weight:400;color:var(--text-muted)}
+        .form-input,.form-textarea,.form-select{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius-xs);font-size:14px;font-family:inherit;color:var(--text);background:var(--input-bg);transition:var(--transition);outline:none}
+        .form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--border-focus);background:#fff;box-shadow:0 0 0 3px var(--accent-glow)}
+        .form-textarea{resize:vertical;min-height:140px;line-height:1.6}
+        .form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235a6d8a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}.form-help{font-size:12px;color:var(--text-muted);margin-top:6px}
+        .queries-notice{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(196,30,36,.04);border:1px solid rgba(196,30,36,.12);border-radius:var(--radius-xs);font-size:12px;color:var(--rifei-red);font-weight:500;margin-bottom:20px}
+        .channel-options{display:flex;gap:12px;flex-wrap:wrap}
+        .channel-option{display:flex;align-items:center;gap:10px;padding:12px 18px;border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);background:#fff;user-select:none}
+        .channel-option:hover{border-color:var(--accent);background:rgba(59,111,208,.03)}
+        .channel-option.selected{border-color:var(--rifei-blue);background:rgba(43,74,158,.04)}
+        .channel-option input[type=checkbox]{display:none}
+        .channel-icon svg{width:18px;height:18px;stroke:var(--text-secondary);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+        .channel-option.selected .channel-icon svg{stroke:var(--rifei-blue)}
+        .channel-name{font-size:14px;font-weight:500;color:var(--text)}
+        .channel-check{width:18px;height:18px;border:2px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+        .channel-option.selected .channel-check{background:var(--rifei-blue);border-color:var(--rifei-blue)}
+        .channel-check svg{width:11px;height:11px;stroke:#fff;stroke-width:3;fill:none;opacity:0}
+        .channel-option.selected .channel-check svg{opacity:1}
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 28px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:var(--transition)}
+        .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+        .btn-primary{background:linear-gradient(135deg,var(--rifei-blue),var(--primary-light));color:#fff;box-shadow:0 2px 8px rgba(43,74,158,.3)}
+        .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(43,74,158,.35)}
+        .btn-secondary{background:var(--input-bg);color:var(--text-secondary);border:1.5px solid var(--border)}
+        .btn-danger{background:#fff;color:var(--rifei-red);border:1.5px solid var(--rifei-red)}
+        .btn-danger:hover{background:var(--rifei-red);color:#fff}
+        .btn-success{background:linear-gradient(135deg,var(--rifei-blue),var(--primary-light));color:#fff;box-shadow:0 2px 8px rgba(43,74,158,.3)}
+        .btn-group{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+        .progress-section{margin-top:28px}.progress-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+        .progress-track{height:8px;background:var(--input-bg);border-radius:4px;overflow:hidden}
+        .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--rifei-blue));border-radius:4px;width:0%;transition:width .5s ease}
+        .progress-status{font-size:13px;color:var(--text-secondary);margin-top:8px}
+        .settings-section{margin-bottom:8px}
+        .settings-header{display:flex;align-items:center;gap:12px;padding:14px 18px;background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);user-select:none}
+        .settings-header.expanded{border-bottom-left-radius:0;border-bottom-right-radius:0}
+        .settings-icon{width:36px;height:36px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .settings-icon svg{width:18px;height:18px;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+        .settings-icon.blue{background:rgba(59,111,208,.1)}.settings-icon.blue svg{stroke:var(--rifei-blue)}
+        .settings-icon.green{background:rgba(40,167,103,.1)}.settings-icon.green svg{stroke:var(--success)}
+        .settings-icon.purple{background:rgba(143,74,231,.1)}.settings-icon.purple svg{stroke:#8f4ae7}
+        .settings-icon.orange{background:rgba(231,143,74,.1)}.settings-icon.orange svg{stroke:#e78f4a}
+        .settings-icon.cyan{background:rgba(74,160,200,.1)}.settings-icon.cyan svg{stroke:#4aa0c8}
+        .settings-icon.teal{background:rgba(20,184,166,.1)}.settings-icon.teal svg{stroke:#14b8a6}
+        .settings-info{flex:1;min-width:0}.settings-name{font-size:14px;font-weight:600;color:var(--text)}
+        .settings-status{font-size:12px;color:var(--text-muted);margin-top:1px;display:flex;align-items:center;gap:6px}
+        .status-dot{width:6px;height:6px;border-radius:50%;background:var(--success)}
+        .status-dot.inactive{background:var(--text-muted)}
+        .settings-chevron{transition:transform .25s ease;color:var(--text-muted)}
+        .settings-header.expanded .settings-chevron{transform:rotate(180deg)}
+        .settings-body{background:#fff;border:1.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:20px;display:none}
+        .settings-body.expanded{display:block}
+        .site-footer{display:flex;justify-content:center;padding:32px 24px 40px;margin-top:32px;background:#fff;border-top:1px solid var(--border);color:var(--text-muted);font-size:13px;line-height:1.7}
+        .site-footer-brand{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;width:190px;max-width:calc(100% - 48px)}
+        .site-footer-line{margin:0;padding:0;line-height:1.5}
+        .site-footer a{color:var(--rifei-blue);text-decoration:none}.site-footer a:hover{text-decoration:underline}
+        .site-footer-rifei{display:block;line-height:0}
+        .site-footer-rifei .rifei-logo{display:block;line-height:0}
+        .site-footer-rifei .rifei-logo svg{display:block;height:40px;width:auto;margin:0 auto}
+        .site-footer-year{color:var(--text-muted);font-size:12px;margin:0}
+        .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @media(max-width:768px){.header{padding:0 16px}.header-badge,.header-divider,.header-subtitle{display:none}.form-row{grid-template-columns:1fr}.btn-group{flex-direction:column}.btn-group .btn{width:100%}}
+        .toast{position:fixed;bottom:24px;right:24px;background:var(--primary-dark);color:#fff;padding:14px 22px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;box-shadow:var(--shadow-lg);transform:translateY(100px);opacity:0;transition:all .3s ease;z-index:1000}
+        .toast.visible{transform:translateY(0);opacity:1}
+        .tab-content{display:none}.tab-content.active{display:block}
+        .toggle-switch{position:relative;width:44px;height:24px;background:var(--border);border-radius:12px;cursor:pointer;transition:var(--transition);flex-shrink:0}
+        .toggle-switch.active{background:var(--rifei-blue)}
+        .toggle-switch::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:var(--transition);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+        .toggle-switch.active::after{left:23px}
+        .llm-toggle-card{display:flex;align-items:center;gap:16px;padding:16px 20px;background:rgba(59,111,208,.04);border:1px solid rgba(59,111,208,.15);border-radius:var(--radius-sm);margin-bottom:20px}
+        .llm-toggle-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--rifei-blue),var(--accent));border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .llm-toggle-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+        .llm-toggle-info{flex:1}.llm-toggle-title{font-size:14px;font-weight:600;color:var(--text)}
+        .llm-toggle-desc{font-size:12px;color:var(--text-muted);margin-top:2px}
+        .llm-badge{font-size:10px;font-weight:600;color:var(--accent);background:rgba(59,111,208,.1);padding:3px 8px;border-radius:10px;letter-spacing:.5px;margin-top:4px;display:inline-block}
+        .error-card,.result-card{display:none}.error-card.visible,.result-card.visible{display:block}
+        .result-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+        .operators-ref{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:24px}
+        .operators-ref-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+        .operators-ref-title{font-size:12px;font-weight:600;color:var(--text-secondary)}
+        .operators-ref-link{font-size:12px;color:var(--rifei-blue);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px}
+        .operator-tags{display:flex;flex-wrap:wrap;gap:8px}
+        .operator-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#fff;border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--text-secondary);font-weight:500}
+        .operator-tag code{color:var(--rifei-blue);font-weight:600}
+        .charts-section{display:none;margin-top:20px}
+        .charts-section.visible{display:block}
+        .charts-section .section-head{font-size:15px;font-weight:700;color:var(--primary);margin-bottom:6px}
+        .charts-section .section-sub{font-size:13px;color:var(--text-secondary);margin-bottom:16px}
+        .chart-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px 20px 12px;margin-bottom:16px;box-shadow:var(--shadow)}
+        .chart-card-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px}
+        .chart-wrap{position:relative;height:360px;width:100%}
+        .chart-period{font-size:12px;color:var(--text-muted);margin-bottom:14px}
+        @media(max-width:768px){.chart-wrap{height:280px}}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="header">
+<div class="header-left">
+<div class="rifei-logo">
+<svg viewBox="0 0 380 80" xmlns="http://www.w3.org/2000/svg" width="380" height="80">
+<g transform="translate(4, 8)">
+<polygon points="32,8 48,17 32,26 16,17" fill="#a8b4c8"/>
+<polygon points="16,17 32,26 32,48 16,39" fill="#2b4a9e"/>
+<polygon points="32,26 48,17 48,39 32,48" fill="#c41e24"/>
+<polygon points="32,16 40,20.5 32,25 24,20.5" fill="#c41e24"/>
+<polygon points="24,20.5 32,25 32,34 24,29.5" fill="#c41e24"/>
+<polygon points="32,25 40,20.5 40,29.5 32,34" fill="#2b4a9e"/>
+<polygon points="32,8 48,17 48,39 32,48 16,39 16,17" fill="none" stroke="#1a2d5c" stroke-width="1.5" stroke-linejoin="round"/>
+</g>
+<text x="72" y="46" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="44" fill="#2b4a9e" letter-spacing="2">РИФЕЙ</text>
+<text x="72" y="68" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="12" fill="#c41e24" letter-spacing="1.5">ЗАВОД СТРОЙТЕХНИКА</text>
+</svg>
+</div>
+<div class="header-divider"></div>
+<div class="header-brand">
+<div class="header-logo"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+<div><div class="header-title">Wordstat<span>Agent</span></div><div class="header-subtitle">Анализ поискового спроса</div></div>
+</div></div>
+<div class="header-badge">v2.5 — Июнь 2026</div>
+</header>
+<div class="main-container">
+<div class="tabs">
+<button class="tab active" data-tab="analysis"><span class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>Анализ</button>
+<button class="tab" data-tab="settings"><span class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Настройки</button>
+</div>
+
+<div class="tab-content active" id="tab-analysis">
+{% if not configured %}
+<div class="card" style="border-color:var(--rifei-red)"><div style="display:flex;align-items:center;gap:12px;color:var(--rifei-red);font-weight:600;font-size:14px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Настройки API не заполнены. Перейдите в Настройки.</div></div>
+{% endif %}
+
+<div class="card"><div class="card-header"><div><div class="card-title"><div class="card-title-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>Поисковые запросы</div><div class="card-description">Введите ключевые слова через запятую или с новой строки</div></div></div>
+<div class="form-group"><textarea class="form-textarea" id="queries" placeholder="купить кузов для мусоровоза&#10;купить ленточный транспортер&#10;купить дробилку для стекла" rows="6"></textarea></div>
+<div class="queries-notice"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Не более 100 запросов в час</div>
+<div class="operators-ref"><div class="operators-ref-top"><div class="operators-ref-title">Операторы Яндекс.Директ</div><a href="https://aistudio.yandex.ru/docs/ru/search-api/concepts/search-operators.html" target="_blank" class="operators-ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Документация</a></div>
+<div class="operator-tags"><span class="operator-tag"><code>-слово</code> минус-слово</span><span class="operator-tag"><code>+слово</code> обязательное</span><span class="operator-tag"><code>!"фраза"</code> точное вхождение</span><span class="operator-tag"><code>[стоп-слова]</code> операторы</span></div></div>
+</div>
+
+<div class="card"><div class="card-header"><div><div class="card-title"><div class="card-title-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>Период анализа</div></div></div>
+<div class="form-row"><div class="form-group"><label class="form-label">Дата от <span class="hint">(YYYY-MM)</span></label><input type="text" class="form-input" id="dateFrom" placeholder="2018-01" value="2018-01"><div class="form-help">Не ранее 2018-01</div></div><div class="form-group"><label class="form-label">Дата до <span class="hint">(YYYY-MM)</span></label><input type="text" class="form-input" id="dateTo" placeholder="2026-05" value="2026-05"><div class="form-help">Последний полный месяц</div></div></div>
+</div>
+
+<div class="card"><div class="card-header"><div><div class="card-title"><div class="card-title-icon"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>Отправить результат</div><div class="card-description">Выберите каналы доставки отчёта</div></div></div>
+<div class="channel-options" id="channelOptions">
+<label class="channel-option" data-channel="telegram"><input type="checkbox"><span class="channel-icon"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span><span class="channel-name">Telegram</span><div class="channel-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div></label>
+<label class="channel-option" data-channel="vk"><input type="checkbox"><span class="channel-icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span><span class="channel-name">VK</span><div class="channel-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div></label>
+<label class="channel-option" data-channel="email"><input type="checkbox"><span class="channel-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span><span class="channel-name">Email</span><div class="channel-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div></label>
+</div></div>
+
+<div class="llm-toggle-card"><div class="llm-toggle-icon"><svg viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M16 14H8a4 4 0 0 0-4 4v2h16v-2a4 4 0 0 0-4-4z"/></svg></div><div class="llm-toggle-info"><div class="llm-toggle-title">Использовать LLM</div><div class="llm-toggle-desc">Расширение запросов, обзор рынка, рекомендации и вердикты через YandexGPT</div><span class="llm-badge">YANDEXGPT</span></div><div class="toggle-switch" id="llmToggle"></div></div>
+
+<div class="btn-group">
+<button class="btn btn-primary" id="btnRun"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>Запустить анализ</button>
+<button class="btn btn-danger" id="btnCancel" style="display:none"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>Отменить</button>
+<button class="btn btn-secondary" id="btnReset"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Сбросить</button>
+</div>
+
+<div class="progress-section" id="progressSection" style="display:none"><div class="card"><div class="progress-title"><div class="spinner"></div> Прогресс анализа</div><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="progress-status" id="progressStatus">Подготовка...</div></div></div>
+
+<div class="card error-card" id="errorCard"><div style="display:flex;align-items:center;gap:12px;color:var(--rifei-red);font-weight:600"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span id="errorMessage"></span></div></div>
+
+<div class="card result-card" id="resultCard">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><div style="width:40px;height:40px;background:rgba(40,167,103,.1);border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div><div><div style="font-size:16px;font-weight:700;color:var(--text)">Анализ завершён</div><div style="font-size:13px;color:var(--text-secondary)">Отчёт готов к скачиванию</div></div></div>
+<div id="sendResults"></div>
+<div class="result-actions">
+<button class="btn btn-success" id="downloadBtn"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Скачать Excel</button>
+<button class="btn btn-secondary send-btn" data-channel="telegram"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Telegram</button>
+<button class="btn btn-secondary send-btn" data-channel="vk"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>VK</button>
+<button class="btn btn-secondary send-btn" data-channel="email"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
+</div></div>
+
+<div class="charts-section" id="chartsSection">
+<div class="card">
+<div class="section-head">Динамика запросов</div>
+<div class="section-sub">Интерактивные графики: наведите курсор на точку, чтобы увидеть значение</div>
+<div class="chart-period" id="chartPeriod"></div>
+<div class="chart-card">
+<div class="chart-card-title" id="chartTopTitle">Топ запросов</div>
+<div class="chart-wrap"><canvas id="chartTop"></canvas></div>
+</div>
+<div class="chart-card">
+<div class="chart-card-title" id="chartAllTitle">Все запросы</div>
+<div class="chart-wrap"><canvas id="chartAll"></canvas></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="tab-content" id="tab-settings">
+<div class="settings-section"><div class="settings-header" id="sectYandex"><div class="settings-icon blue"><svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div><div class="settings-info"><div class="settings-name">Yandex API (Wordstat)</div><div class="settings-status"><span class="status-dot" id="yandexStatus"></span><span id="yandexStatusText">Не настроено</span></div></div><svg class="settings-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+<div class="settings-body"><div class="form-group"><label class="form-label">API-ключ Yandex</label><input type="password" class="form-input" id="yandexApiKey" placeholder="agAAAA..."></div><div class="form-group"><label class="form-label">Folder ID</label><input type="text" class="form-input" id="folderId" placeholder="b1g..."></div></div></div>
+
+<div class="settings-section"><div class="settings-header" id="sectGPT"><div class="settings-icon green"><svg viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M16 14H8a4 4 0 0 0-4 4v2h16v-2a4 4 0 0 0-4-4z"/></svg></div><div class="settings-info"><div class="settings-name">YandexGPT (LLM)</div><div class="settings-status"><span class="status-dot" id="gptStatus"></span><span id="gptStatusText">Не настроено</span></div></div><svg class="settings-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+<div class="settings-body"><div class="form-group"><label class="form-label">API-ключ YandexGPT</label><input type="password" class="form-input" id="yagptApiKey" placeholder="Если не указан, используется ключ Wordstat"></div><div class="form-group"><label class="form-label">Folder ID для GPT</label><input type="text" class="form-input" id="yagptFolderId" placeholder="Если пусто — Folder ID Wordstat"></div><div class="form-group"><label class="form-label">Модель</label><select class="form-select" id="yagptModel"><option value="yandexgpt-lite">yandexgpt-lite</option><option value="yandexgpt">yandexgpt</option><option value="yandexgpt-pro">yandexgpt-pro</option></select><div class="form-help">Нужна роль <code>ai.languageModels.user</code> в каталоге Yandex Cloud</div></div><div class="btn-group" style="margin-top:12px"><button type="button" class="btn btn-secondary" id="btnTestYagpt"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Проверить YandexGPT</button></div></div></div>
+
+<div class="settings-section"><div class="settings-header" id="sectTG"><div class="settings-icon purple"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div><div class="settings-info"><div class="settings-name">Telegram</div><div class="settings-status"><span class="status-dot" id="tgStatus"></span><span id="tgStatusText">Не настроено</span></div></div><svg class="settings-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+<div class="settings-body"><div class="form-group"><label class="form-label">Bot Token</label><input type="password" class="form-input" id="tgBotToken" placeholder="7234567890:AABB..."></div><div class="form-group"><label class="form-label">Chat ID</label><input type="text" class="form-input" id="tgChatId" placeholder="@username или ID"></div></div></div>
+
+<div class="settings-section"><div class="settings-header" id="sectVK"><div class="settings-icon orange"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div><div class="settings-info"><div class="settings-name">VK</div><div class="settings-status"><span class="status-dot" id="vkStatus"></span><span id="vkStatusText">Не настроено</span></div></div><svg class="settings-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+<div class="settings-body"><div class="form-group"><label class="form-label">Access Token</label><input type="password" class="form-input" id="vkToken" placeholder="vk1.a...."></div><div class="form-group"><label class="form-label">Peer ID</label><input type="text" class="form-input" id="vkPeerId" placeholder="-200000000"></div></div></div>
+
+<div class="settings-section"><div class="settings-header" id="sectEmail"><div class="settings-icon cyan"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><div class="settings-info"><div class="settings-name">Email (SMTP)</div><div class="settings-status"><span class="status-dot" id="emailStatus"></span><span id="emailStatusText">Не настроено</span></div></div><svg class="settings-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+<div class="settings-body"><div class="form-row"><div class="form-group"><label class="form-label">SMTP хост</label><input type="text" class="form-input" id="smtpHost" placeholder="smtp.gmail.com"></div><div class="form-group"><label class="form-label">Порт</label><input type="number" class="form-input" id="smtpPort" placeholder="587"></div></div><div class="form-group"><label class="form-label">Логин</label><input type="text" class="form-input" id="smtpUser"></div><div class="form-group"><label class="form-label">Пароль</label><input type="password" class="form-input" id="smtpPassword"></div><div class="form-row"><div class="form-group"><label class="form-label">От кого (From)</label><input type="email" class="form-input" id="emailFrom"></div><div class="form-group"><label class="form-label">Кому (To)</label><input type="email" class="form-input" id="emailTo"></div></div><div class="form-group"><label class="channel-option" style="border:none;padding:0"><input type="checkbox" id="smtpUseTls" checked><span class="channel-name">Использовать TLS</span></label></div></div></div>
+
+<div class="settings-section"><div class="settings-header" id="sectGeneral"><div class="settings-icon blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 15z"/></svg></div><div class="settings-info"><div class="settings-name">Общие настройки</div><div class="settings-status"><span class="status-dot" id="generalStatus"></span><span id="generalStatusText">TOP-N и задержка</span></div></div><svg class="settings-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+<div class="settings-body"><div class="form-row"><div class="form-group"><label class="form-label">TOP-N для графиков и отчёта</label><select class="form-select" id="topN"><option value="5">Топ 5</option><option value="10">Топ 10</option><option value="15">Топ 15</option><option value="20">Топ 20</option></select><div class="form-help">Сколько запросов показывать в топ-листах Excel</div></div><div class="form-group"><label class="form-label">Задержка между запросами (сек)</label><input type="number" class="form-input" id="requestDelay" placeholder="0.4" step="0.1" min="0"><div class="form-help">Пауза между обращениями к Wordstat API</div></div></div></div>
+
+<div class="settings-section"><div class="settings-header" id="sectProxy"><div class="settings-icon teal"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="settings-info"><div class="settings-name">Прокси</div><div class="settings-status"><span class="status-dot inactive" id="proxyStatus"></span><span id="proxyStatusText">Нет прокси</span></div></div><svg class="settings-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+<div class="settings-body"><div class="form-group"><label class="form-label">Тип прокси</label><select class="form-select" id="proxyType"><option value="none">Нет прокси</option><option value="http">HTTP</option><option value="socks5">SOCKS5</option></select></div><div class="form-row"><div class="form-group"><label class="form-label">Хост</label><input type="text" class="form-input" id="proxyHost" placeholder="127.0.0.1"></div><div class="form-group"><label class="form-label">Порт</label><input type="number" class="form-input" id="proxyPort" placeholder="1080"></div></div></div></div>
+
+<div class="btn-group" style="margin-top:28px"><button class="btn btn-success" id="btnSaveSettings"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Сохранить настройки</button></div>
+</div>
+
+</div>
+
+<footer class="site-footer">
+<div class="site-footer-brand">
+<p class="site-footer-line">WordstatAgent — Инструмент анализа поисковых запросов</p>
+<p class="site-footer-line">Разработано для</p>
+<a href="https://v-press.ru" target="_blank" rel="noopener" class="site-footer-rifei">
+<div class="rifei-logo">
+<svg viewBox="0 0 380 80" xmlns="http://www.w3.org/2000/svg" aria-label="РИФЕЙ Завод Стройтехника">
+<g transform="translate(45, 5)">
+<polygon points="32,8 48,17 32,26 16,17" fill="#a8b4c8"/>
+<polygon points="16,17 32,26 32,48 16,39" fill="#2b4a9e"/>
+<polygon points="32,26 48,17 48,39 32,48" fill="#c41e24"/>
+<polygon points="32,16 40,20.5 32,25 24,20.5" fill="#c41e24"/>
+<polygon points="24,20.5 32,25 32,34 24,29.5" fill="#c41e24"/>
+<polygon points="32,25 40,20.5 40,29.5 32,34" fill="#2b4a9e"/>
+<polygon points="32,8 48,17 48,39 32,48 16,39 16,17" fill="none" stroke="#1a2d5c" stroke-width="1.5" stroke-linejoin="round"/>
+</g>
+<text x="110" y="46" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="44" fill="#2b4a9e" letter-spacing="2">РИФЕЙ</text>
+<text x="110" y="68" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="12" fill="#c41e24" letter-spacing="1.5">ЗАВОД СТРОЙТЕХНИКА</text>
+</svg>
+</div>
+</a>
+<p class="site-footer-year">© 2026</p>
+</div>
+</footer>
+
+<div class="toast" id="toast"></div>
+<script>
+let running=false, pollInterval=null;
+let chartTopInstance=null, chartAllInstance=null;
+const SETTINGS_FIELDS={
+    yandex_api_key:'yandexApiKey',folder_id:'folderId',yagpt_api_key:'yagptApiKey',yagpt_folder_id:'yagptFolderId',
+    yagpt_model:'yagptModel',tg_bot_token:'tgBotToken',tg_chat_id:'tgChatId',vk_token:'vkToken',vk_peer_id:'vkPeerId',
+    smtp_host:'smtpHost',smtp_port:'smtpPort',smtp_user:'smtpUser',smtp_password:'smtpPassword',
+    email_from:'emailFrom',email_to:'emailTo',top_n:'topN',request_delay:'requestDelay',
+    proxy_type:'proxyType',proxy_host:'proxyHost',proxy_port:'proxyPort'
+};
+const INT_SETTINGS=['proxy_port','smtp_port','top_n'];
+const FLOAT_SETTINGS=['request_delay'];
+
+document.querySelectorAll('.tab').forEach(t=>{t.addEventListener('click',()=>{document.querySelectorAll('.tab,.tab-content').forEach(e=>e.classList.remove('active'));t.classList.add('active');document.getElementById('tab-'+t.dataset.tab).classList.add('active')})});
+document.querySelectorAll('.settings-header').forEach(h=>{h.addEventListener('click',()=>{h.classList.toggle('expanded');h.nextElementSibling.classList.toggle('expanded')})});
+document.querySelectorAll('#channelOptions .channel-option').forEach(o=>{
+    o.addEventListener('click',e=>{
+        e.preventDefault();
+        const c=o.querySelector('input[type="checkbox"]');
+        c.checked=!c.checked;
+        o.classList.toggle('selected',c.checked);
+    });
+});
+document.getElementById('llmToggle').addEventListener('click',function(){this.classList.toggle('active')});
+document.getElementById('proxyType').addEventListener('change',function(){const d=document.getElementById('proxyStatus'),t=document.getElementById('proxyStatusText'),l={none:'Нет прокси',http:'HTTP',socks5:'SOCKS5'};d.className='status-dot'+(this.value==='none'?' inactive':'');t.textContent=l[this.value]});
+
+function parseApiMessage(j){if(j&&j.message)return j.message;if(j&&Array.isArray(j.detail)&&j.detail.length)return j.detail.map(x=>x.msg||String(x)).join('; ');return'Неизвестная ошибка'}
+function setStatus(dotId,textId,ok,okText,errText){const dot=document.getElementById(dotId),txt=document.getElementById(textId);if(!dot||!txt)return;dot.className='status-dot'+(ok?'':' inactive');txt.textContent=ok?okText:errText}
+
+async function loadSettings(){try{const r=await fetch('/api/settings'),d=await r.json();if(!d.success)return;const c=d.config;
+    for(const[key,elId]of Object.entries(SETTINGS_FIELDS)){const el=document.getElementById(elId);if(!el)continue;const val=c[key];if(el.tagName==='SELECT'){if(val!=null&&val!=='')el.value=val}else if(val!=null)el.value=val}
+    const tls=document.getElementById('smtpUseTls');if(tls)tls.checked=c.smtp_use_tls!==false;
+    updateStatus(c)}catch(e){console.error(e)}}
+function updateStatus(c){setStatus('yandexStatus','yandexStatusText',c.yandex_api_key&&c.folder_id,'Настроено','Не настроено');
+    const gptOk=c.yagpt_ready||(c.yagpt_api_key||c.yandex_api_key)&&(c.yagpt_folder_id||c.folder_id);
+    setStatus('gptStatus','gptStatusText',gptOk,'YandexGPT готов','Укажите ключ и Folder ID');
+    setStatus('tgStatus','tgStatusText',c.tg_bot_token&&c.tg_chat_id,'Настроено','Не настроено');
+    setStatus('vkStatus','vkStatusText',c.vk_token&&c.vk_peer_id,'Настроено','Не настроено');
+    setStatus('emailStatus','emailStatusText',c.smtp_host&&c.smtp_user&&c.email_to,'Настроено','Не настроено');
+    const gtxt='TOP-'+(c.top_n||10)+', задержка '+(c.request_delay??0.4)+' с';
+    setStatus('generalStatus','generalStatusText',true,gtxt,gtxt);
+    const pt=c.proxy_type||'none',pd=document.getElementById('proxyStatus'),ptx=document.getElementById('proxyStatusText');
+    if(pd&&ptx){const labels={none:'Нет прокси',http:'HTTP',socks5:'SOCKS5'};pd.className='status-dot'+(pt==='none'?' inactive':'');ptx.textContent=labels[pt]||pt}}
+function collectSettingsPayload(){const d={};for(const[key,elId]of Object.entries(SETTINGS_FIELDS)){const el=document.getElementById(elId);if(!el)continue;const raw=el.value;if(INT_SETTINGS.includes(key)){if(raw===''||raw==null)continue;const n=parseInt(raw,10);if(!isNaN(n))d[key]=n}else if(FLOAT_SETTINGS.includes(key)){if(raw===''||raw==null)continue;const n=parseFloat(raw);if(!isNaN(n))d[key]=n}else if(raw!=='')d[key]=raw}
+    const tls=document.getElementById('smtpUseTls');if(tls)d.smtp_use_tls=tls.checked;return d}
+async function saveSettings(){const payload=collectSettingsPayload();try{const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),j=await r.json();if(r.ok&&j.success){updateStatus(payload);showToast('Настройки сохранены')}else showToast('Ошибка: '+parseApiMessage(j))}catch(e){showToast('Ошибка: '+e.message)}}
+document.getElementById('btnSaveSettings').addEventListener('click',saveSettings);
+document.getElementById('btnTestYagpt').addEventListener('click',async function(){
+    const btn=this,orig=btn.innerHTML;
+    btn.disabled=true;btn.innerHTML='<div class="spinner"></div> Проверка...';
+    try{
+        const r=await fetch('/api/yagpt/test',{method:'POST'});
+        const j=await r.json();
+        showToast(j.success?'✅ '+j.message:'❌ '+j.message);
+        if(j.success)setStatus('gptStatus','gptStatusText',true,'YandexGPT готов','Не настроено');
+    }catch(e){showToast('❌ '+e.message)}
+    btn.disabled=false;btn.innerHTML=orig;
+});
+document.getElementById('btnRun').addEventListener('click',runAnalysis);
+document.getElementById('btnCancel').addEventListener('click',cancelAnalysis);
+document.getElementById('btnReset').addEventListener('click',resetForm);
+
+async function runAnalysis(){if(running)return;const q=document.getElementById('queries').value.trim();if(!q){showToast('Введите запросы');return}running=true;document.getElementById('btnRun').innerHTML='<div class="spinner"></div> Запуск...';document.getElementById('btnRun').style.opacity='0.7';document.getElementById('btnCancel').style.display='inline-flex';document.getElementById('progressSection').style.display='block';document.getElementById('errorCard').classList.remove('visible');document.getElementById('resultCard').classList.remove('visible');document.getElementById('chartsSection').classList.remove('visible');destroyCharts();const ch={};document.querySelectorAll('#channelOptions .channel-option').forEach(o=>ch['send_'+o.dataset.channel]=o.querySelector('input').checked);ch.use_llm=document.getElementById('llmToggle').classList.contains('active');try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({queries:q,date_from:document.getElementById('dateFrom').value.trim(),date_to:document.getElementById('dateTo').value.trim(),...ch})});const j=await r.json();if(!j.success){showError(j.message||parseApiMessage(j));stopRun();return}pollProgress()}catch(e){showError('Ошибка: '+e.message);stopRun()}}
+function pollProgress(){if(pollInterval)clearInterval(pollInterval);pollInterval=setInterval(async()=>{try{const r=await fetch('/api/progress'),d=await r.json();updateUI(d);if(!d.running){clearInterval(pollInterval);pollInterval=null;if(d.last_error)showError(d.last_error);else if(d.last_result)showResult(d);stopRun()}}catch(e){}},1000)}
+function updateUI(d){const f=document.getElementById('progressFill'),s=document.getElementById('progressStatus');let p=0;if(d.total>0)p=Math.round(d.current/d.total*100);else if(d.message==='Завершено')p=100;f.style.width=Math.min(p,100)+'%';s.textContent=d.message||'Обработка...'}
+function destroyCharts(){if(chartTopInstance){chartTopInstance.destroy();chartTopInstance=null}if(chartAllInstance){chartAllInstance.destroy();chartAllInstance=null}}
+function buildChartOptions(title){return{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{title:{display:false},legend:{position:'bottom',labels:{boxWidth:12,padding:14,font:{size:11}}},tooltip:{backgroundColor:'#1e3a6e',titleFont:{size:13},bodyFont:{size:12},padding:12,callbacks:{label:function(ctx){const v=ctx.parsed.y;if(v==null)return ctx.dataset.label+': нет данных';return ctx.dataset.label+': '+v.toLocaleString('ru-RU')+' показов/мес'}}}},scales:{x:{grid:{display:false},ticks:{maxRotation:45,minRotation:0,font:{size:11}}},y:{beginAtZero:true,title:{display:true,text:'Показов в месяц',font:{size:11}},ticks:{callback:function(v){return v>=1000?(v/1000).toFixed(0)+'k':v}}}}}};
+function renderLineChart(canvasId,chartDef,storeKey){const el=document.getElementById(canvasId);if(!el||!chartDef||typeof Chart==='undefined')return;const cfg={type:'line',data:{labels:chartDef.labels||[],datasets:(chartDef.datasets||[]).map(function(ds){return Object.assign({},ds,{spanGaps:true})})},options:buildChartOptions(chartDef.title)};if(storeKey==='top'){if(chartTopInstance)chartTopInstance.destroy();chartTopInstance=new Chart(el,cfg)}else{if(chartAllInstance)chartAllInstance.destroy();chartAllInstance=new Chart(el,cfg)}}
+async function loadCharts(){try{const r=await fetch('/api/chart-data'),j=await r.json();if(!r.ok||!j.success||!j.data)return;const d=j.data;document.getElementById('chartPeriod').textContent='Период: '+d.period;document.getElementById('chartTopTitle').textContent=d.top_chart.title;document.getElementById('chartAllTitle').textContent=d.all_chart.title;renderLineChart('chartTop',d.top_chart,'top');renderLineChart('chartAll',d.all_chart,'all');document.getElementById('chartsSection').classList.add('visible')}catch(e){console.error('charts',e)}}
+function showResult(d){document.getElementById('resultCard').classList.add('visible');document.getElementById('progressSection').style.display='none';const box=document.getElementById('sendResults');if(box&&d.last_send_results&&d.last_send_results.length>0){let h='';d.last_send_results.forEach(item=>{const icon=item.success?'✅':'❌',bg=item.success?'rgba(40,167,103,0.1)':'rgba(196,30,36,0.1)';h+='<div style="padding:8px 12px;background:'+bg+';border-radius:8px;margin-bottom:6px;font-size:13px">'+icon+' <strong>'+item.channel+':</strong> '+item.message+'</div>'});box.innerHTML=h}else if(box)box.innerHTML='';loadCharts()}
+function showError(m){document.getElementById('errorCard').classList.add('visible');document.getElementById('errorMessage').textContent=m;document.getElementById('progressSection').style.display='none'}
+function stopRun(){running=false;document.getElementById('btnRun').innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Запустить анализ';document.getElementById('btnRun').style.opacity='1';document.getElementById('btnCancel').style.display='none'}
+async function cancelAnalysis(){try{await fetch('/api/cancel',{method:'POST'})}catch(e){}clearInterval(pollInterval);pollInterval=null;document.getElementById('progressFill').style.width='0%';document.getElementById('progressStatus').textContent='Отменён';stopRun();document.getElementById('progressSection').style.display='none';showToast('Анализ отменён')}
+function resetForm(){if(running)cancelAnalysis();document.getElementById('queries').value='';document.getElementById('dateFrom').value='';document.getElementById('dateTo').value='';document.querySelectorAll('#channelOptions .channel-option').forEach(o=>{o.classList.remove('selected');o.querySelector('input').checked=false});document.getElementById('progressSection').style.display='none';document.getElementById('errorCard').classList.remove('visible');document.getElementById('resultCard').classList.remove('visible');document.getElementById('chartsSection').classList.remove('visible');destroyCharts();showToast('Форма сброшена')}
+function downloadResult(){window.location.href='/api/download?'+Date.now()}
+document.getElementById('downloadBtn').addEventListener('click',downloadResult);
+document.addEventListener('click',async function(e){
+    const btn=e.target.closest('.send-btn');
+    if(!btn||btn.disabled)return;
+    const ch=btn.dataset.channel,orig=btn.innerHTML;
+    btn.className='btn btn-primary send-btn';
+    btn.innerHTML='<div class="spinner"></div> Отправка...';
+    btn.disabled=true;
+    try{
+        const r=await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:ch})});
+        const d=await r.json();
+        showToast(d.success?'✅ '+(d.message||'Готово'):'❌ '+(d.message||parseApiMessage(d)));
+    }catch(err){showToast('❌ Ошибка: '+err.message)}
+    finally{setTimeout(()=>{btn.className='btn btn-secondary send-btn';btn.innerHTML=orig;btn.disabled=false},1500)}
+});
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('visible');setTimeout(()=>t.classList.remove('visible'),3000)}
+loadSettings();
+</script>
+</body>
+</html>
