@@ -255,4 +255,4 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 ## Лицензия и авторство
 
 © 2026. WordstatAgent — инструмент анализа поисковых запросов.  
-Разработано для **РИФЕЙ — Завод Стройтехника** ([rifei.ru](https://rifei.ru)).
+Разработано для **РИФЕЙ — Завод Стройтехника** ([rifei.ru](https://v-press.ru)).
