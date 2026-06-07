@@ -36,9 +36,19 @@ class _NullStream:
 if sys.stderr is None: sys.stderr = _NullStream()
 if sys.stdout is None: sys.stdout = _NullStream()
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
-    datefmt="%H:%M:%S", handlers=[logging.StreamHandler(), logging.FileHandler(os.path.join(_PROJECT_DIR, "app.log"), encoding="utf-8")])
+_log_path = os.path.join(_PROJECT_DIR, "app.log")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
+    datefmt="%H:%M:%S",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(_log_path, encoding="utf-8", mode="a"),
+    ],
+    force=True,
+)
 logger = logging.getLogger("wordstat.app")
+logger.info("Лог-файл: %s", _log_path)
 
 from app.config import config_manager
 from app.wordstat_client import parse_raw_queries, collect_all_data, parse_date_range, clean_query
@@ -53,7 +63,7 @@ from app.yandexgpt_client import (
     is_configured as yagpt_configured,
     test_connection as yagpt_test_connection,
 )
-from app.senders import send_telegram, send_vk, send_email
+from app.senders import send_telegram, send_vk, send_email, test_smtp_connection
 
 class AppState:
     def __init__(self):
@@ -84,7 +94,7 @@ class SettingsUpdate(BaseModel):
     yandex_api_key: Optional[str] = None; folder_id: Optional[str] = None
     yagpt_api_key: Optional[str] = None; yagpt_folder_id: Optional[str] = None; yagpt_model: Optional[str] = None
     tg_bot_token: Optional[str] = None; tg_chat_id: Optional[str] = None
-    vk_token: Optional[str] = None; vk_peer_id: Optional[str] = None
+    vk_token: Optional[str] = None; vk_group_id: Optional[str] = None; vk_peer_id: Optional[str] = None
     smtp_host: Optional[str] = None; smtp_port: Optional[int] = None
     smtp_user: Optional[str] = None; smtp_password: Optional[str] = None
     email_from: Optional[str] = None; email_to: Optional[str] = None; smtp_use_tls: Optional[bool] = None
@@ -258,9 +268,13 @@ async def run_analysis(data: AnalysisRequest):
             if enabled:
                 result = func(output_path)
                 send_results.append({"channel": ch.capitalize(), **result})
+                if not result.get("success"):
+                    logger.error("Отправка %s не удалась: %s", ch, result.get("message"))
         app_state.last_send_results = send_results
         logger.info(f"Анализ завершён за {time.time()-start_time:.1f}с")
-    except Exception as e: app_state.last_error = f"Ошибка: {e}"; logger.error(app_state.last_error)
+    except Exception as e:
+        app_state.last_error = f"Ошибка: {e}"
+        logger.exception("Ошибка анализа")
     finally: app_state.analysis_running = False; update_progress(0, 0, "Завершено")
 
 @app.get("/api/progress")
@@ -280,6 +294,10 @@ async def get_chart_data():
 async def test_yagpt():
     return yagpt_test_connection()
 
+@app.post("/api/email/test")
+async def test_email():
+    return test_smtp_connection()
+
 @app.post("/api/cancel")
 async def cancel_analysis():
     if app_state.analysis_running: app_state.analysis_cancelled = True; return {"success": True, "message": "Отменяется"}
@@ -298,8 +316,13 @@ async def send_result(data: SendRequest):
         return {"success": False, "message": "Файл не найден"}
     funcs = {"telegram": send_telegram, "vk": send_vk, "email": send_email}
     f = funcs.get(data.channel)
-    if not f: return {"success": False, "message": f"Неизвестный канал: {data.channel}"}
-    return f(app_state.last_result_path)
+    if not f:
+        logger.error("Неизвестный канал отправки: %s", data.channel)
+        return {"success": False, "message": f"Неизвестный канал: {data.channel}"}
+    result = f(app_state.last_result_path)
+    if not result.get("success"):
+        logger.error("Ручная отправка %s: %s", data.channel, result.get("message"))
+    return result
 
 def _stop_previous_instances(port: int) -> None:
     """Завершает другие экземпляры агента (exe) и процесс на порту, кроме текущего PID."""

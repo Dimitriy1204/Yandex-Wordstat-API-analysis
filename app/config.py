@@ -29,6 +29,7 @@ class AppConfig:
     tg_bot_token: str = ""
     tg_chat_id: str = ""
     vk_token: str = ""
+    vk_group_id: str = ""
     vk_peer_id: str = ""
     smtp_host: str = ""
     smtp_port: int = 587
